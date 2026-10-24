@@ -98,6 +98,8 @@ DEMO_DATA = {
     "utr": "428719043215",
     "upi_id": "express.tasks99@ybl",
     "bank_name": "State Bank of India (SBI)",
+    "branch": "Raj Nagar Extension, Ghaziabad",
+    "email": "aarav.sharma@example.com",
     "description": (
         "Received a message on WhatsApp promising ₹3,500/day for writing reviews on Google Maps. "
         "Was then directed to a Telegram group 'Global Merchant Rating Task Force'. "
@@ -138,6 +140,8 @@ def load_demo():
     st.session_state["bank_name"] = DEMO_DATA["bank_name"]
     st.session_state["description"] = DEMO_DATA["description"]
     st.session_state["scam_type"] = DEMO_DATA["scam_type"]
+    st.session_state["branch"] = DEMO_DATA["branch"]
+    st.session_state["email"] = DEMO_DATA["email"]
     st.session_state["specifics"] = DEMO_DATA["specifics"].copy()
 
 
@@ -343,7 +347,10 @@ with col1:
         "Date of Fraudulent Transaction *",
         value=st.session_state.get("datetime", datetime.now()),
     )
-    time_input = st.time_input("Time of Transaction *", value=datetime.now().time())
+    if "txn_time" not in st.session_state:
+        st.session_state["txn_time"] = datetime.now().time().replace(second=0, microsecond=0)
+    time_input = st.time_input("Time of Transaction *", value=st.session_state["txn_time"])
+    st.session_state["txn_time"] = time_input
     combined_dt = f"{dt_input} {time_input.strftime('%H:%M:%S')}"
     st.session_state["datetime"] = combined_dt
 
@@ -416,6 +423,19 @@ with col2:
             st.error(f"❌ UPI ID Error: {upi_err}")
         else:
             st.success(f"✅ Valid UPI ID format ({upi_input})")
+    branch_input = st.text_input(
+        "Bank Branch Name / City (optional)",
+        value=st.session_state.get("branch", ""),
+        placeholder="e.g. Raj Nagar Extension, Ghaziabad",
+    )
+    st.session_state["branch"] = branch_input
+
+    email_input = st.text_input(
+        "Your Email (optional)",
+        value=st.session_state.get("email", ""),
+        placeholder="e.g. aarav.sharma@example.com",
+    )
+    st.session_state["email"] = email_input
 
 desc_input = st.text_area(
     "Short Incident Description / Sequence of Events *",
@@ -491,6 +511,8 @@ case_data = {
     "description": st.session_state["description"],
     "scam_type": st.session_state["scam_type"],
     "scam_specifics": st.session_state.get("specifics", {}),
+    "branch": st.session_state.get("branch", ""),
+    "email": st.session_state.get("email", ""),
 }
 
 # Validation summary check
