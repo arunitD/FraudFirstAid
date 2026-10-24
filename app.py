@@ -156,6 +156,12 @@ with st.sidebar:
     )
     st.title("FraudFirstAid")
     st.caption("Immediate Documentation Kit for Cyber Crime Victims in India")
+    lang_choice = st.selectbox(
+        "🌐 Output language",
+        ["English", "हिन्दी (Hindi)"],
+        key="lang_choice",
+    )
+    lang = "hi" if lang_choice == "हिन्दी (Hindi)" else "en"
 
     st.markdown("---")
     st.markdown("### ⚡ Quick Demo")
@@ -554,9 +560,9 @@ if not form_ready:
     st.warning("⚠️ Please provide at least a Name, valid 12-digit UTR, valid UPI ID, and Amount to generate full official outputs.")
 
 # Generate output strings
-script_1930 = generate_1930_script(case_data, processed_evidence)
-bank_letter = generate_bank_dispute_letter(case_data, processed_evidence)
-cybercrime_text = generate_cybercrime_portal_text(case_data, processed_evidence)
+script_1930 = generate_1930_script(case_data, processed_evidence, lang=lang)
+bank_letter = generate_bank_dispute_letter(case_data, processed_evidence, lang=lang)
+cybercrime_text = generate_cybercrime_portal_text(case_data, processed_evidence, lang=lang)
 
 # Generate PDF pack bytes
 try:
