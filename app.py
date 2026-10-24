@@ -5,6 +5,7 @@ Runs locally with no API keys, using only streamlit, hashlib, and reportlab.
 
 import streamlit as st
 from datetime import datetime
+from extractor import extract_details
 
 # Local helper modules
 from validators import validate_utr, validate_upi_id, validate_phone, validate_amount
@@ -321,6 +322,32 @@ st.markdown("---")
 # STEP 2: Incident & Transaction Fields with Real-time Validation
 # ---------------------------------------------------------
 st.subheader("Step 2: Incident & Transaction Details")
+with st.expander("⚡ Auto-fill from a pasted chat or SMS (optional)"):
+    pasted_text = st.text_area(
+        "Paste the scam chat, bank SMS or payment message here:",
+        height=140,
+        key="paste_box",
+    )
+    if st.button("🔎 Extract details", key="extract_btn"):
+        found = extract_details(pasted_text or "")
+        filled = []
+        if found.get("utr"):
+            st.session_state["utr"] = found["utr"]
+            filled.append("UTR")
+        if found.get("upi_id"):
+            st.session_state["upi_id"] = found["upi_id"]
+            filled.append("UPI ID")
+        if found.get("amount"):
+            st.session_state["amount"] = float(found["amount"])
+            filled.append("Amount")
+        if filled:
+            st.success("Filled in: " + ", ".join(filled))
+        else:
+            st.warning("No UTR, UPI ID or amount found in that text.")
+        if found.get("phones"):
+            st.info("Phone numbers found (possible fraudster numbers): " + ", ".join(found["phones"]))
+        if found.get("urls"):
+            st.info("Links found: " + ", ".join(found["urls"]))
 
 col1, col2 = st.columns(2)
 
