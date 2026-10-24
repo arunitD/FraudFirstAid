@@ -6,6 +6,7 @@ Runs locally with no API keys, using only streamlit, hashlib, and reportlab.
 import streamlit as st
 from datetime import datetime
 from extractor import extract_details
+import json
 
 # Local helper modules
 from validators import validate_utr, validate_upi_id, validate_phone, validate_amount
@@ -520,6 +521,16 @@ if uploaded_files:
         c4.markdown(f'<span class="hash-badge">{ev["sha256"]}</span>', unsafe_allow_html=True)
 
     st.success("🔒 SHA-256 tamper-evident integrity seals computed successfully.")
+    evidence_index = json.dumps(
+        [{"filename": e["filename"], "sha256": e["sha256"], "timestamp": e["timestamp"]} for e in processed_evidence],
+        indent=2,
+    )
+    st.download_button(
+        "📥 Download Evidence Index (.json)",
+        data=evidence_index,
+        file_name="evidence_index.json",
+        mime="application/json",
+    )
 else:
     st.info("ℹ️ No screenshots uploaded yet. You can upload screenshots now or test using the pre-loaded fields.")
 
@@ -571,11 +582,12 @@ except Exception as e:
     pdf_bytes = b""
     st.error(f"Error compiling PDF: {e}")
 
-tab1, tab2, tab3, tab4 = st.tabs([
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "📞 1930 Helpline Read-Aloud Script",
     "🏦 Bank Dispute / Chargeback Letter",
     "💻 cybercrime.gov.in Complaint Text",
     "📑 PDF Evidence Pack (Dossier)",
+    "🔍 Verify Evidence",
 ])
 
 with tab1:
@@ -643,6 +655,36 @@ with tab4:
     else:
         st.warning("PDF could not be compiled. Please ensure reportlab is installed.")
 
+
+with tab5:
+    st.markdown("#### Verify Evidence Integrity")
+    st.caption(
+        "Upload the evidence index you downloaded earlier and the files to check. "
+        "The app recomputes each SHA-256 and shows whether a file changed."
+    )
+    v_col1, v_col2 = st.columns(2)
+    with v_col1:
+        index_file = st.file_uploader("1) Evidence index (.json)", type=["json"], key="verify_index")
+    with v_col2:
+        check_files = st.file_uploader("2) Files to verify", accept_multiple_files=True, key="verify_files")
+
+    if index_file and check_files:
+        try:
+            saved = {row["filename"]: row for row in json.loads(index_file.read().decode("utf-8"))}
+        except Exception:
+            saved = None
+            st.error("Could not read the evidence index. Upload the .json file downloaded from Step 3.")
+        if saved is not None:
+            for f in check_files:
+                rec = process_evidence_file(f.name, f.read())
+                original = saved.get(f.name)
+                if original is None:
+                    st.warning(f"❓ {f.name}: not found in the evidence index.")
+                elif original["sha256"] == rec["sha256"]:
+                    st.success(f"✅ MATCH: {f.name} is unchanged since {original['timestamp']}.")
+                else:
+                    st.error(f"❌ CHANGED: {f.name} does not match the saved hash.")
+                    st.code(f"Saved:    {original['sha256']}\nUploaded: {rec['sha256']}")
 
 # ---------------------------------------------------------
 # Footer Disclaimer (Mandatory Requirement)
